@@ -1,6 +1,8 @@
 package com.coolweather.android;
 
+import android.app.Fragment;
 import android.app.ProgressDialog;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,8 +15,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
+import androidx.annotation.RequiresApi;
 
+import com.coolweather.android.R;
 import com.coolweather.android.db.City;
 import com.coolweather.android.db.County;
 import com.coolweather.android.db.Province;
@@ -32,45 +35,36 @@ import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
 
-/**
- * 注释qweqweqweqweqweqweqweqw
- */
-
 public class ChooseAreaFragment extends Fragment {
-
     /**
      * 宏定义试图的不同级别
      */
-    public static final int LEVEL_PROVINCE = 0;//zhege asdasd
+    public static final int LEVEL_PROVINCE = 0;
     public static final int LEVEL_CITY = 1;
     public static final int LEVEL_COUNTY = 2;
-
     /**
      * 准备一些控件
      */
     private ProgressDialog progressDialog;
     private TextView titleText;
     private Button backButton;
+
     private ListView listView;
     private ArrayAdapter<String> adapter;
     private List<String> dataList = new ArrayList<>();
-
     /**
      * 省、市、县的列表
      */
     private List<Province> provinceList;
     private List<City> cityList;
     private List<County> countyList;
-
     // 选中的省
     private Province selectedProvince;
-
     // 选中的市
     private City selectedCity;
-
     // 当前选中的级别
     private int currentLevel;
-
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -78,16 +72,14 @@ public class ChooseAreaFragment extends Fragment {
         titleText = view.findViewById(R.id.title_text);
         backButton = view.findViewById(R.id.back_button);
         listView = view.findViewById(R.id.list_view); //获取控件的实例
-        adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, dataList);//初始化 ArrayAdapter
+        adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, dataList); //初始化 ArrayAdapter
         listView.setAdapter(adapter);
         return view;
     }
-
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-
-// 设置 ListView 和 Button 的点击事件
+        // 设置 ListView 和 Button 的点击事件
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -112,15 +104,14 @@ public class ChooseAreaFragment extends Fragment {
         });
         queryProvinces(); // 加载省级数据
     }
-
     /**
      * 查询全国所有的省，优先从数据库中查，如果没有查询到再到服务器上查
      */
     private void queryProvinces() {
-        titleText.setText("中国");// 设置头布局标题
-        backButton.setVisibility(View.GONE);// 隐藏返回按钮
+        titleText.setText("中国"); // 设置头布局标题
+        backButton.setVisibility(View.GONE); // 隐藏返回按钮
         provinceList = DataSupport.findAll(Province.class); // 调用 LitePal 查询接口来从数据库中读取省级数据
-        if (provinceList.size() > 0) {// 读到了则显示到界面上
+        if (provinceList.size() > 0) { // 读到了则显示到界面上
             dataList.clear();
             for (Province province : provinceList) {
                 dataList.add(province.getProvinceName());
@@ -128,13 +119,11 @@ public class ChooseAreaFragment extends Fragment {
             adapter.notifyDataSetChanged();
             listView.setSelection(0);
             currentLevel = LEVEL_PROVINCE;
-        } else {// 没有读到则从服务器上获取
-            String address = "http://guolin.tech/api/china";// 请求地址
+        } else { // 没有读到则从服务器上获取
+            String address = "http://guolin.tech/api/china"; // 请求地址
             queryFromServer(address, "province"); // 后面会定义此方法
         }
-
     }
-
     /**
      * 查询选中县内所有的市，优先从数据库中查，如果没有查询到再到服务器上查
      */
@@ -157,7 +146,6 @@ public class ChooseAreaFragment extends Fragment {
             queryFromServer(address, "city");
         }
     }
-
     /**
      * 查询选中市内所有的县，优先从数据库中查询，如果没有查询到就从服务器中查询数据
      */
@@ -181,16 +169,16 @@ public class ChooseAreaFragment extends Fragment {
             queryFromServer(address, "county");
         }
     }
-
     /**
      * 根据传入的地址和类型从服务器中查询省市县数据
      */
     private void queryFromServer(String address, final String type) {
         showProgressDialog();
-        HttpUtil.sendOkHttpRequest(address, new Callback() {// 向服务器发送请求
+        HttpUtil.sendOkHttpRequest(address, new Callback() { // 向服务器发送请求
             @Override
             public void onFailure(Call call, IOException e) { //处理加载失败的情况
                 getActivity().runOnUiThread(new Runnable() {
+                    @RequiresApi(api = Build.VERSION_CODES.M)
                     @Override
                     public void run() {
                         closeProgressDialog();
@@ -198,10 +186,9 @@ public class ChooseAreaFragment extends Fragment {
                     }
                 });
             }
-
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-// 接收响应的数据并做对应处理
+                // 接收响应的数据并做对应处理
                 String responseText = response.body().string();
                 boolean result = false;
                 if ("province".equals(type)) {
@@ -212,7 +199,7 @@ public class ChooseAreaFragment extends Fragment {
                     result = Utility.handleCountyResponse(responseText, selectedCity.getId());
                 }
                 if (result) {
-                    getActivity().runOnUiThread(new Runnable() {// 从子线程切换到主线程
+                    getActivity().runOnUiThread(new Runnable() { // 从子线程切换到主线程
                         @Override
                         public void run() {
                             closeProgressDialog();
@@ -228,9 +215,7 @@ public class ChooseAreaFragment extends Fragment {
                 }
             }
         });
-
     }
-
     /**
      * 显示进度对话框
      */
@@ -241,7 +226,6 @@ public class ChooseAreaFragment extends Fragment {
             progressDialog.setCanceledOnTouchOutside(false);
         }
     }
-
     /**
      * 关闭进度对话框
      */
@@ -250,7 +234,4 @@ public class ChooseAreaFragment extends Fragment {
             progressDialog.dismiss();
         }
     }
-
 }
-
-
